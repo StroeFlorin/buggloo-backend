@@ -10,9 +10,9 @@
 	</parent>
 	<groupId>dev.stroe</groupId>
 	<artifactId>buggloo</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.1</version>
 	<name>buggloo</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Buggloo</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -45,6 +45,11 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+  			<groupId>com.openai</groupId>
+  			<artifactId>openai-java</artifactId>
+  			<version>2.7.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -53,6 +58,8 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+			
 		</plugins>
 	</build>
 
