@@ -1,33 +1,56 @@
-HELP.md
-target/
+# Maven build files
+/target/
 !.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# Eclipse
+*.classpath
+*.project
+*.settings/
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# IntelliJ
+.idea/
 *.iml
-*.ipr
+*.iws
+out/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+# VS Code
 .vscode/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Spring Boot
+spring-boot-loader/
+dependency-reduced-pom.xml
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Test reports
+/test-output/
+.surefire-*
+
+# Coverage
+jacoco.exec
+coverage/
+
+# Local dev config
+application-local.yml
+application-dev.yml
+application.properties.local
+application.yml.local
