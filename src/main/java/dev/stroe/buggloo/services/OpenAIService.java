@@ -2,7 +2,6 @@ package dev.stroe.buggloo.services;
 
 import java.util.List;
 import java.util.Base64;
-
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
@@ -13,7 +12,7 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.StructuredChatCompletionCreateParams;
 
 import dev.stroe.buggloo.config.OpenAIConfig;
-import dev.stroe.buggloo.exceptions.InsectIdentificationException;
+import dev.stroe.buggloo.exceptions.ServiceException;
 import dev.stroe.buggloo.models.Insect;
 
 import org.slf4j.Logger;
@@ -45,11 +44,11 @@ public class OpenAIService {
      * 
      * @param imageBytes the image data as byte array
      * @return Insect object with identification results
-     * @throws InsectIdentificationException if identification fails
+     * @throws ServiceException if identification fails
      */
     public Insect identifyInsect(byte[] imageBytes) {
         if (imageBytes == null || imageBytes.length == 0) {
-            throw new InsectIdentificationException("Image data is empty or null");
+            throw new ServiceException("Image data is empty or null");
         }
 
         try {
@@ -57,12 +56,29 @@ public class OpenAIService {
 
             String imageBase64Url = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(imageBytes);
 
-            ChatCompletionContentPart imageContentPart = createImageContentPart(imageBase64Url);
-            ChatCompletionContentPart questionContentPart = createTextContentPart(IDENTIFICATION_PROMPT);
-
-            StructuredChatCompletionCreateParams<Insect> createParams = buildChatCompletionParams(
-                    List.of(questionContentPart, imageContentPart)
+            // Create image content part
+            ChatCompletionContentPart imageContentPart = ChatCompletionContentPart.ofImageUrl(
+                    ChatCompletionContentPartImage.builder()
+                            .imageUrl(ChatCompletionContentPartImage.ImageUrl.builder()
+                                    .url(imageBase64Url)
+                                    .build())
+                            .build()
             );
+
+            // Create text content part
+            ChatCompletionContentPart textContentPart = ChatCompletionContentPart.ofText(
+                    ChatCompletionContentPartText.builder()
+                            .text(IDENTIFICATION_PROMPT)
+                            .build()
+            );
+
+            // Build chat completion parameters
+            StructuredChatCompletionCreateParams<Insect> createParams = ChatCompletionCreateParams.builder()
+                    .model(ChatModel.GPT_4_1)
+                    .maxCompletionTokens(config.getMaxTokens())
+                    .responseFormat(Insect.class)
+                    .addUserMessageOfArrayOfContentParts(List.of(textContentPart, imageContentPart))
+                    .build();
 
             Insect result = client.chat().completions().create(createParams)
                     .choices()
@@ -72,7 +88,7 @@ public class OpenAIService {
                     .orElse(null);
 
             if (result == null) {
-                throw new InsectIdentificationException("No identification result received from OpenAI");
+                throw new ServiceException("No identification result received from OpenAI");
             }
 
             logger.debug("Successfully identified insect: {}", result.commonName);
@@ -80,34 +96,72 @@ public class OpenAIService {
 
         } catch (Exception e) {
             logger.error("Failed to identify insect", e);
-            throw new InsectIdentificationException("Failed to identify insect: " + e.getMessage(), e);
+            throw new ServiceException("Failed to identify insect: " + e.getMessage(), e);
         }
     }
 
-    private ChatCompletionContentPart createImageContentPart(String imageBase64Url) {
-        return ChatCompletionContentPart.ofImageUrl(
-                ChatCompletionContentPartImage.builder()
-                        .imageUrl(ChatCompletionContentPartImage.ImageUrl.builder()
-                                .url(imageBase64Url)
-                                .build())
-                        .build()
-        );
-    }
+    /**
+     * Generates a chat response using OpenAI API based on past conversation, current message, and insect context.
+     * 
+     * @param pastConversation the previous conversation context
+     * @param message the current user message
+     * @param insectName the name of the insect being discussed
+     * @return String containing the AI's response
+     * @throws ServiceException if chat generation fails
+     */
+    public String generateChatResponse(String pastConversation, String message, String insectName) {
+        if (message == null || message.trim().isEmpty()) {
+            throw new ServiceException("Message cannot be empty");
+        }
 
-    private ChatCompletionContentPart createTextContentPart(String text) {
-        return ChatCompletionContentPart.ofText(
-                ChatCompletionContentPartText.builder()
-                        .text(text)
-                        .build()
-        );
-    }
+        try {
+            logger.debug("Generating chat response for insect: {}, message: {}", insectName, message);
 
-    private StructuredChatCompletionCreateParams<Insect> buildChatCompletionParams(List<ChatCompletionContentPart> contentParts) {
-        return ChatCompletionCreateParams.builder()
-                .model(ChatModel.GPT_4O)
-                .maxCompletionTokens(config.getMaxTokens())
-                .responseFormat(Insect.class)
-                .addUserMessageOfArrayOfContentParts(contentParts)
-                .build();
+            // Build developer message with system context
+            StringBuilder developerMessageBuilder = new StringBuilder();
+            
+            // Add system context about the insect
+            String systemContext = String.format(
+                "You are an expert insect assistant. You are discussing %s. " +
+                "ONLY respond to questions and conversations about insects, bugs, and related entomology topics. " +
+                "If the user asks about anything unrelated to insects, politely redirect them back to insect topics. " +
+                "Provide concise, accurate information about insects only. " +
+                "Keep responses brief, conversational, and in a single paragraph without line breaks or newlines. " +
+                "Avoid using \\n or multiple paragraphs in your response.",
+                insectName != null && !insectName.trim().isEmpty() ? insectName : "insects in general"
+            );
+            developerMessageBuilder.append(systemContext);
+            
+            // Add past conversation context if provided
+            if (pastConversation != null && !pastConversation.trim().isEmpty()) {
+                developerMessageBuilder.append(" Previous conversation context: ");
+                developerMessageBuilder.append(pastConversation);
+            }
+
+            ChatCompletionCreateParams createParams = ChatCompletionCreateParams.builder()
+                    .model(ChatModel.GPT_4_1)
+                    .maxCompletionTokens(2048)
+                    .addDeveloperMessage(developerMessageBuilder.toString())
+                    .addUserMessage(message)
+                    .build();
+
+            String result = client.chat().completions().create(createParams)
+                    .choices()
+                    .stream()
+                    .findFirst()
+                    .map(choice -> choice.message().content().orElse(""))
+                    .orElse("");
+
+            if (result.isEmpty()) {
+                throw new ServiceException("No response received from OpenAI");
+            }
+
+            logger.debug("Successfully generated chat response of length: {}", result.length());
+            return result;
+
+        } catch (Exception e) {
+            logger.error("Failed to generate chat response", e);
+            throw new ServiceException("Failed to generate chat response: " + e.getMessage(), e);
+        }
     }
 }

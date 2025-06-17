@@ -21,7 +21,7 @@ public class ImageValidationService {
             "image/webp"
     );
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB
 
     /**
      * Validates the uploaded image file.

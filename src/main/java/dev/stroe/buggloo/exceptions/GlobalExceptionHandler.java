@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Global exception handler for consistent error responses.
@@ -17,11 +18,11 @@ public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(InsectIdentificationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInsectIdentificationException(InsectIdentificationException ex) {
-        logger.error("Insect identification error: {}", ex.getMessage(), ex);
+    @ExceptionHandler(ServiceException.class)
+    public ResponseEntity<ApiResponse<Void>> handleServiceException(ServiceException ex) {
+        logger.error("Service error: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                .body(ApiResponse.error("IDENTIFICATION_FAILED", ex.getMessage()));
+                .body(ApiResponse.error("SERVICE_FAILED", ex.getMessage()));
     }
 
     @ExceptionHandler(InvalidImageException.class)
@@ -36,6 +37,13 @@ public class GlobalExceptionHandler {
         logger.warn("File size too large: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                 .body(ApiResponse.error("FILE_TOO_LARGE", "The uploaded file is too large"));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException ex) {
+        logger.debug("Static resource not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("RESOURCE_NOT_FOUND", "The requested resource was not found"));
     }
 
     @ExceptionHandler(Exception.class)

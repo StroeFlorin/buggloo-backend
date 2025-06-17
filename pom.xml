@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>dev.stroe</groupId>
 	<artifactId>buggloo</artifactId>
-	<version>1.2</version>
+	<version>1.5</version>
 	<name>buggloo</name>
 	<description>Buggloo</description>
 	<url/>
