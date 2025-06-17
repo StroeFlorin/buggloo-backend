@@ -91,7 +91,6 @@ public class OpenAIService {
                 throw new ServiceException("No identification result received from OpenAI");
             }
 
-            logger.debug("Successfully identified insect: {}", result.commonName);
             return result;
 
         } catch (Exception e) {
@@ -156,7 +155,6 @@ public class OpenAIService {
                 throw new ServiceException("No response received from OpenAI");
             }
 
-            logger.debug("Successfully generated chat response of length: {}", result.length());
             return result;
 
         } catch (Exception e) {
