@@ -21,8 +21,6 @@ public class ImageValidationService {
             "image/webp"
     );
 
-    private static final long MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB
-
     /**
      * Validates the uploaded image file.
      * 
@@ -32,10 +30,6 @@ public class ImageValidationService {
     public void validateImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new InvalidImageException("No image file provided");
-        }
-
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new InvalidImageException("Image file size exceeds maximum allowed size of 10MB");
         }
 
         String contentType = file.getContentType();

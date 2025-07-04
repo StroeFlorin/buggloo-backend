@@ -12,6 +12,7 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.StructuredChatCompletionCreateParams;
 
 import dev.stroe.buggloo.config.OpenAIConfig;
+import dev.stroe.buggloo.exceptions.NoInsectException;
 import dev.stroe.buggloo.exceptions.ServiceException;
 import dev.stroe.buggloo.models.Insect;
 
@@ -47,10 +48,6 @@ public class OpenAIService {
      * @throws ServiceException if identification fails
      */
     public Insect identifyInsect(byte[] imageBytes) {
-        if (imageBytes == null || imageBytes.length == 0) {
-            throw new ServiceException("Image data is empty or null");
-        }
-
         try {
             logger.debug("Starting insect identification for image of size: {} bytes", imageBytes.length);
 
@@ -91,8 +88,14 @@ public class OpenAIService {
                 throw new ServiceException("No identification result received from OpenAI");
             }
 
+            if (!result.isInsect) {
+                throw new NoInsectException("No insect identified");
+            }
+
             return result;
 
+        } catch (NoInsectException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Failed to identify insect", e);
             throw new ServiceException("Failed to identify insect: " + e.getMessage(), e);
